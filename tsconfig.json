@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2016",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "lib": ["ESNext", "DOM"],
+    "jsx": "preserve",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "typeRoots": ["./types", "./node_modules/@types"]
+  },
+  "include": ["src/**/*", "types/**/*.d.ts"]
+}
