@@ -77,6 +77,10 @@
                 </div>
             </div>
         </div>
+        <div class="actionsSettings"> 
+          <button class="actionsSettings--btn actionsSettings--btn--save  ">Save</button>
+          <button class="actionsSettings--btn actionsSettings--btn--cancel">Cancel</button>
+        </div>
     </div>
   </div>
 
@@ -206,9 +210,10 @@ async function pushToWeather(index:number){
         );
         if(response.ok){
             const data = await response.json()
+            console.log(data)
             const temp : CityWeather = {
-                city:String(data.city),
-                country:String(data.country),
+                city:String(listSearch.value[index].city),
+                country:String(listSearch.value[index].country),
                 coord:{
                     lat:Number(data.coord.lat),
                     lon:Number(data.coord.lon)
@@ -298,10 +303,38 @@ onBeforeMount(async () => {
     border-radius: 8px;
     
   }
+  .actionsSettings {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    &--btn {
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.5s;
+      &--save {
+        background-color: rgb(72, 72, 74);
+        color: white;
+        border: none;
+        &:hover {
+          background-color: rgb(108, 108, 112);
+        }
+      }
+      &--cancel {
+        margin-left: 5px;
+        border: rgb(72, 72, 74) solid 1px;
+        background: none;
+        color: rgb(72, 72, 74);
+        &:hover {
+          background-color: rgb(209, 209, 218);
+        }
+      }
+    }
+  }
   .card {
     width: 300px;
     margin: 16px 0;
-    //border: 2px solid #eee;
     padding: 8px;
     &--cities {
         background-color: rgb(226, 226, 226);
@@ -310,7 +343,6 @@ onBeforeMount(async () => {
         align-items: center;
         margin-top: 15px;
         padding: 10px;
-
         &--item {
             display: flex;
             align-items: center;
@@ -322,7 +354,6 @@ onBeforeMount(async () => {
                 }
             }
         }
-
         &--delete {
             display: flex;
             align-items: center;
