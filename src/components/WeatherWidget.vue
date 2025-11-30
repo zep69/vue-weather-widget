@@ -2,22 +2,27 @@
   <div class="weather-wrapper">
     <div class="widget">
       <h3>Weather</h3>
-
+      <div v-if="weather.length === 0 && typeCard === 'weather'">
+        <div class="header"  >
+          <img :src="gearUrl" height="25" class="gearButton" @click="typeCard = 'settings'"/>
+        </div>
+        <div class="noDataBlock" >
+          <img :src="infoUrl" height="50px" alt="">
+          <span>Please add city</span>
+        </div>
+      </div>
       <div v-for="(item, index) in weather" :key="item.city" class="card" v-if="typeCard === 'weather'">
         <div class="card--row card--header">
           <span>{{ item.city }}</span>
-          <img :src="gearUrl" height="25" class="gearButton" v-if="index===0" @click="typeCard = 'settings'"/>
+          <img :src="gearUrl" height="25" class="gearButton" v-if="index===0 && canEdit" @click="typeCard = 'settings'"/>
         </div>
-
         <div class="card--center" v-if="item.weather.length > 0">
           <img :src="`https://openweathermap.org/img/wn/${item.weather[0].icon}@2x.png`" />
           <span class="card--temp">{{ item.main.temp }}°C</span>
         </div>
-
         <div class="card--center" v-if="item.weather.length > 0">
           <span>Feels like {{ item.main.feels_like }}°C. {{ item.weather[0].main }}, {{ item.weather[0].description }}</span>
         </div>
-
         <table class="card--info">
           <tbody>
             <tr>
@@ -60,34 +65,35 @@
                 <img :src="deleteUrl" @click="deleteFromWeather(index)" height="20px" alt="">
             </div>
         </div>
+        <div class="actionsSettings" v-if="weather.length > 0"> 
+          <button class="actionsSettings--btn actionsSettings--btn--save" @click="saveInStorage(weather)">Save</button>
+          <button class="actionsSettings--btn actionsSettings--btn--cancel">Cancel</button>
+        </div>
         <div class="card--add">
             <span>Add Location:</span>
             <div class="card--add--row">
-                <input type="text" v-model="newCity"/>
+                <input type="text" v-model="newCity" @keyup.enter="getCities(newCity)"/>
                 <img :src="enterUrl" height="20px" @click="getCities(newCity)" alt="">
             </div>
         </div>
         <div class="card--list">
             <div v-for="(item, index) in listSearch" class="card--list--item">
                 <div class="card--list--item--row">
-                    <span>{{ item.city }}, {{item.country}}, {{ item.state }}</span>
+                    <span>{{ item.city }}, {{item.country}}<span v-if="item.state !== undefined"> , {{ item.state }} </span></span>
                 </div>
                 <div class="card--list--item--row">
                     <img :src="addUrl" @click="pushToWeather(index)" height="20px" alt="">
                 </div>
             </div>
         </div>
-        <div class="actionsSettings"> 
-          <button class="actionsSettings--btn actionsSettings--btn--save  ">Save</button>
-          <button class="actionsSettings--btn actionsSettings--btn--cancel">Cancel</button>
-        </div>
+        
     </div>
   </div>
 
 </template>
 
 <script lang="ts" setup>
-import { ref, onBeforeMount } from 'vue';
+import { ref, onBeforeMount, } from 'vue';
 import gearUrl from '@/assets/gear-svgrepo-com.svg';
 import pressureUrl from '@/assets/gauge-high-svgrepo-com.svg';
 import windUrl from '@/assets/wind-svgrepo-com.svg';
@@ -96,25 +102,28 @@ import birgerUrl from '@/assets/burger-menu-svgrepo-com.svg';
 import deleteUrl from '@/assets/delete-2-svgrepo-com.svg';
 import enterUrl from '@/assets/enter-svgrepo-com.svg';
 import addUrl from '@/assets/add-ellipse-svgrepo-com.svg'
+import infoUrl from '@/assets/info-svgrepo-com.svg';
 
 type Card = 'weather' | 'settings';
+
 const typeCard = ref<Card>('weather');
 const newCity = ref<string>('')
+const canEdit = ref<boolean>(true)
 
 
 const dragIndex = ref<number | null>(null);
 let startIndex: number | null = null
 
-function enableDrag(index: number): void {
+function enableDrag(index: number){
   dragIndex.value = index
 }
-function disableDrag(): void {
+function disableDrag(){
   dragIndex.value = null
 }
-function onDragStart(index: number): void {
+function onDragStart(index: number){
   startIndex = index
 }
-function onDrop(dropIndex: number): void {
+function onDrop(dropIndex: number){
   if (startIndex === null) return
 
   const moved = weather.value[startIndex]
@@ -123,12 +132,12 @@ function onDrop(dropIndex: number): void {
 
   startIndex = null
 }
-function onDragEnd(): void {
+function onDragEnd(){
   dragIndex.value = null
   startIndex = null
 }
 
-function deleteFromWeather(index:number): void {
+function deleteFromWeather(index:number){
     weather.value.splice(index, 1)
 }
 
@@ -155,27 +164,30 @@ type CityListSearch = {
 
 const listSearch = ref<CityListSearch[]>([])
 
-const weather = ref<CityWeather[]>([
-  {
-    city: 'Moscow',
-    country: 'RU',
-    coord: { lon: 37.6174943, lat: 55.7504461 },
-    weather: [{ main: '', description: '', icon: '' }],
-    main: { temp: 0, feels_like: 0, humidity: 0, pressure: 0 },
-    visibility: 0,
-    wind: { speed: 0, deg: 0 }
-  },
-  {
-    city: 'London',
-    country: 'GB',
-    coord: { lon: -0.1276474, lat: 51.5073219 },
-    weather: [{ main: '', description: '', icon: '' }],
-    main: { temp: 0, feels_like: 0, humidity: 0, pressure: 0 },
-    visibility: 0,
-    wind: { speed: 0, deg: 0 }
-  }
-]);
+const weather = ref<CityWeather[]>([]);
 
+async function saveInStorage(arr:CityWeather[]) {
+  try{
+    const json = JSON.stringify(arr)
+    localStorage.setItem('weather', json)
+    typeCard.value = 'weather'
+    canEdit.value = false
+  }catch(e) {
+    console.error(e)
+  }
+}
+
+function loadFromStorage() {
+  const data = localStorage.getItem('weather')
+  if (!data) return 
+
+  try {
+    weather.value =  JSON.parse(data) as CityWeather[]
+  } catch (e) {
+    console.error(e)
+    return 
+  }
+}
 
 async function getCities(city:string){
     try{
@@ -191,7 +203,7 @@ async function getCities(city:string){
                         lat: Number(data[i].lat),
                         lon:Number(data[i].lon)
                     },
-                    state:String(data[i].state)
+                    state:data[i].state
                 })
             }
             console.log(listSearch.value)
@@ -225,7 +237,7 @@ async function pushToWeather(index:number){
                     humidity: Number(data.main?.humidity ?? 0),
                     pressure: Number(data.main?.pressure ?? 0)
                 },
-                visibility: Number(data.visibility ?? 0),
+                visibility: Number(data.visibility ?? 0)/1000,
                 wind: {
                     speed: Number(data.wind?.speed ?? 0),
                     deg: Number(data.wind?.deg ?? 0),
@@ -256,7 +268,7 @@ async function getWeather(arr: CityWeather[]) {
             humidity: Number(data.main?.humidity ?? 0),
             pressure: Number(data.main?.pressure ?? 0)
           },
-          visibility: Number(data.visibility ?? 0),
+          visibility: Number(data.visibility ?? 0)/1000,
           wind: {
             speed: Number(data.wind?.speed ?? 0),
             deg: Number(data.wind?.deg ?? 0),
@@ -273,12 +285,30 @@ async function getWeather(arr: CityWeather[]) {
 }
 
 onBeforeMount(async () => {
-  await getWeather(weather.value);
+  if(localStorage.getItem('weather')) {
+    loadFromStorage()
+    await getWeather(weather.value);
+    canEdit.value = false
+  }
+  
 });
 
 </script>
 
 <style lang="scss" scoped>
+.header {
+    display: flex;
+    justify-content: end;
+    align-items: center;
+  }
+.noDataBlock {
+    background-color: rgb(209, 209, 218);
+    padding: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 5px;
+  }
 .weather-wrapper {
   font-family: Roboto, system-ui, -apple-system, sans-serif;
   .gearButton {
@@ -301,6 +331,7 @@ onBeforeMount(async () => {
   .widget {
     padding: 12px;
     border-radius: 8px;
+    width: 300px;
     
   }
   .actionsSettings {
@@ -365,12 +396,17 @@ onBeforeMount(async () => {
         input {
             padding: 5px;
             width: 100%;
+            margin-top: 10px;
         }
         &--row {
             display: flex;
             align-items: center;
         }
-        
+        img {
+          margin-top: 10px;
+          margin-left: 5px;
+          cursor: pointer;
+        }
     }
     &--list {
         margin-top: 10px;
@@ -385,6 +421,9 @@ onBeforeMount(async () => {
             &--row {
                 display: flex;
                 align-items: center;
+                img {
+                  cursor: pointer;
+                }
             }
         }
     }
